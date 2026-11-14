@@ -126,6 +126,13 @@ h2{font-size:18px;margin:30px 0 12px;letter-spacing:-.01em}
 #t-soc:hover,#t-pbq:hover,#t-course:hover,#t-josh:hover,#t-exams:hover,#t-acr:hover,#t-gloss:hover,#t-weak:hover{border-color:transparent;border-left-color:var(--accent,var(--amber))}
 .tile::after{content:none}
 .tile .tag-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.acc-card{border:1px solid var(--line);margin:14px 0 0;min-width:0}
+.acc-card legend{padding:0 6px}
+.acc-out{font-size:14px;margin:0 0 12px;color:var(--txt)}
+.acc-check{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.4;cursor:pointer;min-height:44px}
+.acc-check input{width:20px;height:20px;margin-top:1px;flex:0 0 auto;accent-color:var(--amber)}
+.acc-chip{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--txt);border:1px solid var(--line);border-left:3px solid var(--green);border-radius:8px;padding:8px 12px;margin:0 0 12px}
+.lnk{color:var(--cyan);text-decoration:underline;font-size:13px;padding:6px 2px}
 .home-foot{margin-top:18px;justify-content:space-between}
 .btn.reset-btn{color:var(--red);border-color:color-mix(in srgb,var(--red) 45%,transparent)}
 .btn.reset-btn:hover{background:color-mix(in srgb,var(--red) 12%,transparent);border-color:var(--red)}
@@ -8891,7 +8898,15 @@ function h2hCodeToSeed(code){
 }
 
 /* ================= adaptive pressure ================= */
-function limit(){ return TIGHT[Math.max(0,Math.min(4,S.tight))]; }
+/* Testing accommodations (Pearson VUE lists three kinds: extra testing time, a separate testing room, breaks).
+   S.acc={time:<percent extra>,breaks:bool,room:bool}. Extra time scales every exam-style clock in the app. */
+const EXAM_BASE_MIN=90;
+function accTime(){ const t=S.acc&&+S.acc.time; return (t>0&&t<=300)?Math.round(t):0; }
+function accOn(){ return !!(S.acc&&(accTime()||S.acc.breaks||S.acc.room)); }
+function examMins(){ return Math.round(EXAM_BASE_MIN*(1+accTime()/100)); }
+function accScale(sec){ return Math.round(sec*(1+accTime()/100)); }
+function accLabel(){ const o=[]; if(accTime()) o.push("+"+accTime()+"% time"); if(S.acc&&S.acc.breaks) o.push("breaks"); if(S.acc&&S.acc.room) o.push("separate room"); return o.join(" \u00b7 "); }
+function limit(){ return accScale(TIGHT[Math.max(0,Math.min(4,S.tight))]); }
 function adapt(ok){
   S.roll.push(ok?1:0); if(S.roll.length>12) S.roll.shift();
   if(S.roll.length>=8){
@@ -9143,6 +9158,8 @@ function home(){
       <p><b>One exam, up to 90 items, freshly randomized on every attempt.</b> Each run draws 3 to 5 PBQs at random, then fills the remaining slots up to 90 with multiple choice, weighted to the official domain percentages, so a heavier PBQ draw means fewer multiple choice items that attempt, matching how the extra time PBQs take gets balanced against the 90-minute clock. Untimed or your own clock. <b>No feedback until you submit</b>. Review maps every miss to its objective.</p>
       <h4>Question Queue</h4>
       <p>Severity-coded tickets; wrong calls cost network integrity, more for a P1. <b>Timer defaults to adaptive</b> (tightens above 85 percent, loosens below 60), or switch to untimed and answer at your own pace.</p>
+      <h4>Testing accommodations</h4>
+      <p>If Pearson VUE has approved extra time, breaks, or a separate room for you, set it in Settings. Extra time lengthens the practice exam clock and the Question Queue timer to match your exam day, and the Academy adjusts its pacing plan.</p>
       <h4>Acronyms &amp; Flashcards use spaced repetition</h4>
       <p>One section, two tabs: Acronym Recall (multiple-choice) and Flashcards (free recall). In both, items you keep missing come back sooner and items you know fade out.</p>
       <h4>The Academy teaches; Night Shift drills</h4>
@@ -9178,6 +9195,7 @@ function home(){
       <div class="s" style="line-height:1.25"><span class="sf">${esc(g.label)}</span><span class="ss">${g.met}/2 exams met</span></div></div>
   </div>
 
+  ${accOn()?`<p class="acc-chip" style="margin-top:10px"><span>Accommodations on: ${accLabel()}${accTime()?" \u00b7 "+examMins()+"-minute exam":""}</span><button class="lnk" onclick="profile(false)">Change</button></p>`:""}
   ${homeResume()}
   <div class="tiles" id="homeTiles">
     <button class="tile" id="t-course" style="--accent:var(--cyan)" onclick="openCourse()">
@@ -9270,7 +9288,7 @@ function shiftSetup(){
     <button class="${S.timerOff?"":"on"}" onclick="setTimerOff(false)">Adaptive</button>
     <button class="${S.timerOff?"on":""}" onclick="setTimerOff(true)">Untimed</button>
   </div>
-  <p class="dim" style="margin-top:12px;font-size:13px">${S.timerOff?"No clock. Answer at your own pace \u2014 useful for learning a domain before speed matters.":"Currently at "+limit()+" seconds per ticket. It tightens as your rolling accuracy climbs, and loosens if you drop below 60%."}</p>
+  <p class="dim" style="margin-top:12px;font-size:13px">${S.timerOff?"No clock. Answer at your own pace \u2014 useful for learning a domain before speed matters.":"Currently at "+limit()+" seconds per ticket"+(accTime()?" (includes your +"+accTime()+"% extra time)":"")+". It tightens as your rolling accuracy climbs, and loosens if you drop below 60%."}</p>
   <h2 style="margin-top:20px">Shift length</h2>
   <div class="row">
     <button class="btn pri" onclick="shiftStart(15)">Short - 15 tickets</button>
@@ -10339,15 +10357,17 @@ function examHome(){
   </div>`:`
   <div class="row" style="margin-bottom:10px"><span class="dim" style="font-size:12.5px">${st}</span></div>
   <div class="tiles">
-    <button class="tile" style="--accent:var(--amber)" onclick="examBegin(90,false)">
-      <span class="tag">Real conditions \u00b7 blind</span><h3>90 minutes</h3><p>Match the actual exam clock. Counts toward history and the gate.</p></button>
+    <button class="tile" style="--accent:var(--amber)" onclick="examBegin(examMins(),false)">
+      <span class="tag">${accTime()?"Your exam clock \u00b7 blind":"Real conditions \u00b7 blind"}</span><h3>${examMins()} minutes</h3><p>${accTime()?`Standard 90 minutes plus your ${accTime()}% extra time, the clock you will have on exam day.`:"Match the actual exam clock."} Counts toward history and the gate.</p></button>
+    ${accTime()?`<button class="tile" style="--accent:var(--line)" onclick="examBegin(90,false)">
+      <span class="tag">Standard clock \u00b7 blind</span><h3>90 minutes</h3><p>The unextended clock, if you want a harder rehearsal. Counts toward history and the gate.</p></button>`:""}
     <button class="tile" style="--accent:var(--cyan)" onclick="examBegin(null,true)">
       <span class="tag">Relaxed \u00b7 answers shown as you go</span><h3>No timer</h3><p>Work at your own pace with immediate feedback. Doesn't count toward history or the gate.</p></button>
     <div class="tile" style="--accent:var(--violet);cursor:default">
       <span class="tag">Custom \u00b7 blind</span><h3>Set your own</h3>
       <p style="margin-bottom:10px">Any number of minutes, 1 to 600. Counts toward history and the gate.</p>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="number" id="customMins" min="1" max="600" value="120" style="width:80px;padding:7px 9px;background:var(--panel);border:1px solid var(--line);border-radius:7px;color:var(--txt);font-size:14px">
+        <input type="number" id="customMins" min="1" max="600" value="${accTime()?examMins():120}" aria-label="Minutes" style="width:80px;padding:7px 9px;background:var(--panel);border:1px solid var(--line);border-radius:7px;color:var(--txt);font-size:14px">
         <button class="btn sm pri" onclick="examCustom()">Start</button>
       </div>
     </div>
@@ -10357,7 +10377,9 @@ function examHome(){
   $("app").innerHTML=`
   <p class="eyebrow">Full length</p><h1>Practice Exam <span class="dim" style="font-size:0.75em;font-weight:400">(Randomized)</span></h1>
   <p class="lede">Up to 90 items, weighted to the real domain blueprint, 3\u20135 PBQs drawn fresh every time. No timer shows feedback as you go; any timed option runs blind and is what counts toward history and the readiness gate.</p>
+  ${accOn()?`<p class="acc-chip"><span>Accommodations on: ${accLabel()}</span><button class="lnk" onclick="profile(false)">Change</button></p>`:""}
   ${startOrResume}
+  ${S.acc&&S.acc.breaks?`<p class="dim" style="font-size:12.5px;margin-top:12px">Approved breaks: use <b>Take a break</b> during a timed exam to stop the clock. Check your determination letter for whether your real breaks stop the clock, and rehearse the way it says.</p>`:""}
   <p class="dim" style="font-size:12px;margin-top:14px">Scoring: multiple choice items are 1 point each, PBQs are 1 point with partial credit. 85%+ is the readiness bar and exam scores count toward the gate.</p>
   <div class="row" style="margin-top:14px"><button class="btn ghost sm" onclick="goHome()">Back to home</button></div>`;
 }
@@ -10448,6 +10470,8 @@ function h2hConfirm(code,isHost){
   <div class="tiles">
     <button class="tile" style="--accent:var(--amber)" onclick="h2hBegin('${code}',90,false)">
       <span class="tag">Real conditions \u00b7 blind</span><h3>90 minutes</h3><p>Match the actual exam clock.</p></button>
+    ${accTime()?`<button class="tile" style="--accent:var(--green)" onclick="h2hBegin('${code}',examMins(),false)">
+      <span class="tag">Your exam clock \u00b7 blind</span><h3>${examMins()} minutes</h3><p>90 minutes plus your ${accTime()}% extra time. Your partner's clock may differ, so compare scores, not finish times.</p></button>`:""}
     <button class="tile" style="--accent:var(--cyan)" onclick="h2hBegin('${code}',null,true)">
       <span class="tag">Relaxed \u00b7 answers shown as you go</span><h3>No timer</h3><p>Work at your own pace with immediate feedback.</p></button>
   </div>
@@ -10538,7 +10562,7 @@ function examRender(){
   strip("practice exam", Math.round(answered/SX.items.length*100), "on",
     "Item <b>"+(SX.i+1)+"</b> / "+SX.items.length, "Answered <b>"+answered+"</b>");
   const tmr=SX.timer?`<span class="xtimer ${SX.timer.expired?"exp":""}"><span class="mono" id="xclk">${SX.timer.visible?(SX.timer.paused?"Paused":fmtT(SX.timer.remain)):""}</span>
-    ${!SX.timer.expired?`<button class="btn ghost sm" onclick="${SX.timer.paused?"resumeExamClock()":"pauseExamClock()"}">${SX.timer.paused?"Resume":"Pause"}</button>`:""}
+    ${!SX.timer.expired?`<button class="btn ghost sm" onclick="${SX.timer.paused?"resumeExamClock()":"pauseExamClock()"}">${SX.timer.paused?"Resume":(S.acc&&S.acc.breaks?"Take a break":"Pause")}</button>`:""}
     <button class="btn ghost sm" onclick="SX.timer.visible=!SX.timer.visible;persistX();examRender()">${SX.timer.visible?"Hide timer":"Show timer"}</button></span>`:"";
   const head=`<div class="xhead">
     <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">${EXAM_ID}${SX.checkMode?" \u00b7 Practice mode":""} \u00b7 ${it.t==="p"?"Performance-based":"Multiple choice"} \u00b7 ${SX.i+1} of ${SX.items.length}</span>
@@ -11055,22 +11079,48 @@ function profile(first){
     <label style="display:block"><div class="zlab-lg">Target exam date</div>
       <input id="pd" type="date" value="${esc(S.exam||"")}"></label>
   </div>
+  <fieldset class="card acc-card">
+    <legend class="zlab-lg">Testing accommodations (optional)</legend>
+    <p class="dim" style="font-size:13px;margin:0 0 12px">If Pearson VUE has approved accommodations for your exam, set them here so practice matches exam day. Pearson VUE lists three kinds: extra testing time, breaks, and a separate testing room.</p>
+    <div class="zlab-lg" id="accTimeLab" style="font-size:13px">Extra testing time</div>
+    <div class="seg" role="radiogroup" aria-labelledby="accTimeLab" id="accSeg" style="margin:6px 0 8px">
+      ${[[0,"None"],[25,"+25%"],[50,"+50%"],[100,"+100%"],[-1,"Other"]].map(o=>`<button type="button" role="radio" data-v="${o[0]}" onclick="accPick(${o[0]})">${o[1]}</button>`).join("")}
+    </div>
+    <div id="accOtherRow" style="display:none;margin:0 0 8px"><label style="font-size:13px">Extra time, percent
+      <input id="accOther" type="number" inputmode="numeric" min="1" max="300" step="1" style="width:90px;margin-left:8px;font-size:16px" oninput="accPreview()"></label></div>
+    <p id="accOut" class="acc-out" aria-live="polite"></p>
+    <label class="acc-check"><input type="checkbox" id="accBreaks" ${S.acc&&S.acc.breaks?"checked":""}><span><b>Breaks</b><span class="dim"> \u00b7 the practice exam's Pause button becomes "Take a break", and the Academy's exam-day plan includes them.</span></span></label>
+    <label class="acc-check"><input type="checkbox" id="accRoom" ${S.acc&&S.acc.room?"checked":""}><span><b>Separate testing room</b><span class="dim"> \u00b7 nothing changes in practice; the Academy's exam-day checklist covers it.</span></span></label>
+    <p class="dim" style="font-size:12px;margin:10px 0 0">Use only what your Pearson VUE determination letter approves. Other arrangements (a reader, a recorder, assistive technology) are decided case by case and have no setting here.</p>
+  </fieldset>
   <div class="row" style="margin-top:16px">
     <button class="btn pri" onclick="saveProfile()">${first?"Start Your Shift":"Save"}</button>
     ${first?"":`<button class="btn ghost" onclick="home()">Cancel</button>`}
   </div>`;
-  profPreview();
+  profPreview(); accInit();
   if($("pn")) $("pn").focus();
+}
+let ACC_SEL=0;
+function accInit(){ const t=accTime(); ACC_SEL=[0,25,50,100].indexOf(t)>=0?t:-1; if(ACC_SEL===-1&&$("accOther")) $("accOther").value=t; accPreview(); }
+function accPick(v){ ACC_SEL=v; accPreview(); if(v===-1&&$("accOther")) $("accOther").focus(); }
+function accFormTime(){ if(ACC_SEL>=0) return ACC_SEL; const n=parseInt(($("accOther")||{}).value,10); return (n>0&&n<=300)?n:0; }
+function accPreview(){
+  const seg=$("accSeg"); if(!seg) return;
+  [...seg.querySelectorAll("button")].forEach(b=>{ const on=+b.getAttribute("data-v")===ACC_SEL; b.classList.toggle("on",on); b.setAttribute("aria-checked",on); });
+  $("accOtherRow").style.display=ACC_SEL===-1?"":"none";
+  const t=accFormTime(), m=Math.round(EXAM_BASE_MIN*(1+t/100));
+  $("accOut").innerHTML=t?`Your exam clock: <b>${m} minutes</b> (90 + ${m-90}). Practice exams and Question Queue timers will use it.`:(ACC_SEL===-1?"Enter a percent from 1 to 300.":"Standard clock: <b>90 minutes</b>.");
 }
 function saveProfile(){
   S.name=($("pn").value||"").trim().slice(0,40);
   S.title=profTitleValue();
   S.exam=$("pd").value||"";
+  S.acc={time:accFormTime(),breaks:!!($("accBreaks")&&$("accBreaks").checked),room:!!($("accRoom")&&$("accRoom").checked)};
   save(); toast("Saved"); home();
 }
 function wipe(){
   askConfirm("Reset all Night Shift progress? This erases your scores, question and acronym coverage, weak areas, flashcard scheduling, practice exam history, and any shift in progress. It cannot be undone. Kept: your name, role, exam date, settings, Drill Down topics, and anything you added. Academy lesson progress is separate; reset it from the Academy's Setup page.",()=>{
-    const keep={}; ["name","title","exam","theme","timerOff","acrEasy","afTab","shiftDom","hiwSeen","customCards","customAcr","cardSeq","jcTopics"].forEach(k=>{ if(S[k]!==undefined) keep[k]=S[k]; });
+    const keep={}; ["name","title","exam","theme","timerOff","acrEasy","afTab","shiftDom","hiwSeen","acc","customCards","customAcr","cardSeq","jcTopics"].forEach(k=>{ if(S[k]!==undefined) keep[k]=S[k]; });
     S=Object.assign({v:2,name:"",exam:"",dom:{},tag:{},qStat:{},srs:{},acrStat:{},sessions:[],bestDrill:0,tight:1,roll:[],flagged:[],customCards:[],customAcr:[],cardSeq:0,recent:[],pbqStat:{}},keep);
     for(let d=1;d<=5;d++) S.dom[d]={s:0,c:0}; save(); toast("Progress reset"); home();
   });
