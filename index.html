@@ -535,6 +535,21 @@ h2{font-size:24px;line-height:1.1}
 .hiw.seen:not([open])>summary::after{color:var(--violet);font-size:17px;animation:hiwPulse 1.8s ease-in-out infinite}
 .hiw.seen:not([open]) .sum-extra{display:inline}
 @media(prefers-reduced-motion:reduce){.hiw>summary::after,.hiw.seen:not([open])>summary::after{animation:none}}
+
+/* teal key: recommended start on Shift length */
+.btn.teal{background:linear-gradient(#6FD3BB,#3FA58E);color:#10201C;border-color:#1E5E50;box-shadow:0 2px 0 #1E5E50,inset 0 1px 0 rgba(255,255,255,.4);font-weight:700}
+.btn.teal:hover{background:linear-gradient(#7FDCC5,#48B39B);border-color:#1E5E50;filter:none}
+.btn.teal:active{transform:translateY(2px);box-shadow:0 0 0 #1E5E50,inset 0 1px 2px rgba(0,0,0,.25)}
+[data-theme="light"] .btn.teal{background:linear-gradient(#2E8C79,#17695A);color:#fff;border-color:#0C3B31;box-shadow:0 2px 0 #0C3B31,inset 0 1px 0 rgba(255,255,255,.25)}
+[data-theme="light"] .btn.teal:hover{background:linear-gradient(#379A85,#1C7766)}
+
+/* Focus: tidy grid on small screens (All domains on top, D1-D5 in one row) */
+@media (max-width:640px){
+  .focus-seg{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:520px}
+  .focus-seg button{text-align:center;padding:10px 4px;border-right:1px solid var(--line)}
+  .focus-seg button:first-child{grid-column:1/-1;border-right:none;border-bottom:1px solid var(--line)}
+  .focus-seg button:last-child{border-right:none}
+}
 </style>
 </head>
 <body>
@@ -9364,7 +9379,7 @@ function shiftSetup(){
     </div>
   </div>`:""}
   <h2>Focus</h2>
-  <div class="seg">
+  <div class="seg focus-seg" role="group" aria-label="Focus domain">
     <button class="${sd===0?"on":""}" onclick="setShiftDom(0)">All domains</button>
     ${[1,2,3,4,5].map(d=>`<button class="${sd===d?"on":""}" onclick="setShiftDom(${d})">D${d}.0</button>`).join("")}
   </div>
@@ -9377,7 +9392,7 @@ function shiftSetup(){
   <p class="dim" style="margin-top:12px;font-size:13px">${S.timerOff?"No clock. Answer at your own pace \u2014 useful for learning a domain before speed matters.":"Currently at "+limit()+" seconds per ticket"+(accTime()?" (includes your +"+accTime()+"% extra time)":"")+". It tightens as your rolling accuracy climbs, and loosens if you drop below 60%."}</p>
   <h2 style="margin-top:20px">Shift length</h2>
   <div class="row">
-    <button class="btn pri" onclick="shiftStart(15)">Short - 15 tickets</button>
+    <button class="btn teal" onclick="shiftStart(15)">Short - 15 tickets</button>
     <button class="btn" onclick="shiftStart(25)">Standard - 25 tickets</button>
     <button class="btn" onclick="shiftStart(50)">Extended - 50 tickets</button>
     <button class="btn" onclick="shiftStart(75)">Long - 75 tickets</button>
