@@ -3122,7 +3122,7 @@ e:"A cold site is a bare facility with basic utilities but no equipment or data 
 w:["","A warm site has some equipment and partially current data already in place, requiring far less setup time than the empty facility described here.","A hot site is a fully running, continuously mirrored duplicate ready for near-instant failover, the opposite of an empty facility needing weeks of setup.","Platform diversity refers to using different technology platforms to avoid a single point of failure, not a recovery site tier."]},
 {i:1623,d:3,o:"3.4",t:"s",g:"power",
 q:"During a power outage, a data center relies on a large diesel-powered unit that automatically starts and takes over the facility's electrical load within about 10 to 15 seconds, sustaining operations for as long as fuel is supplied. Which resilience component is this?",
-c:["Generator","Uninterruptible power supply (UPS)","Redundant power supply","Load balancer"],a:0,
+c:["Generator","Uninterruptible power supply","Redundant power supply","Load balancer"],a:0,
 e:"A generator provides sustained power during an extended outage, taking roughly seconds to start and running for as long as it has fuel, bridging the gap after a UPS's short-term battery power runs out.",
 w:["","A UPS provides instant, short-duration battery power to bridge the gap immediately after an outage, not the sustained, fuel-based, longer-startup power source described here.","A redundant power supply is a duplicate power component within a single device, like a server, not facility-wide backup power infrastructure.","A load balancer distributes network traffic across servers, unrelated to electrical power continuity."]},
 {i:1624,d:3,o:"3.4",t:"s",g:"capacity-planning",
@@ -10378,7 +10378,16 @@ function randomPbqSet(){
   let r=Math.random()*total;
   let n=4;
   for(const [count,w] of weights){ if(r<w){ n=count; break; } r-=w; }
-  return shuffle(PBQ.map(p=>p.id)).slice(0,Math.min(n,PBQ.length));
+  n=Math.min(n,PBQ.length);
+  /* Format mix: match/order/zone are drag-style; grid/select/harden are hands-on
+     (dropdown rows, checkbox picks, toggles). CompTIA publishes no ratio, so drag-style
+     is capped at 2 of 3, 2 of 4, or 3 of 5, which guarantees hands-on PBQs every exam. */
+  const DRAG={match:1,order:1,zone:1};
+  const drag=PBQ.filter(p=>DRAG[p.t]).map(p=>p.id), hands=PBQ.filter(p=>!DRAG[p.t]).map(p=>p.id);
+  const RNG={3:[1,2],4:[2,2],5:[2,3]}[n]||[1,Math.max(1,n-1)], lo=RNG[0], hi=RNG[1];
+  let nd=lo+Math.floor(Math.random()*(hi-lo+1));
+  nd=Math.min(nd,drag.length); let nh=Math.min(n-nd,hands.length); nd=Math.min(n-nh,drag.length);
+  return shuffle(shuffle(drag).slice(0,nd).concat(shuffle(hands).slice(0,nh)));
 }
 /* TEMPORARY: exclude items already seen on the Aug 27, 28, and 30 practice exams so
    the Head 2 Head match is fully fresh and fair. Delete this whole block (and the two
